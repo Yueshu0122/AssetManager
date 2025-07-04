@@ -10,6 +10,7 @@ import "../global.css"
 import { create } from 'zustand'
 import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import '../lib/polyfill';
 
 // const useBearStore = create((set) => ({
 //   bears: 0,

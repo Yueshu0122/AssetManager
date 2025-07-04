@@ -10,8 +10,8 @@ export default function App() {
   // const [session, setSession] = useState<Session | null>(null)
   const session = useAuth((state:any) => state.session)
   console.log('session', session)
-
-
+  console.log('session.user', session?.user)
+  console.log('session.user.id', session?.user?.id)
 
   return (
     <View>

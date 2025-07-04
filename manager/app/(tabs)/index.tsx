@@ -1,12 +1,50 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import RecordCard from "@/components/RecordCard";
+import { create } from "zustand";
+import axios from "axios";
+import { useAuth } from "../_layout";
+
+export const useRecord = create((set) => ({
+  records: [],
+  fetchRecords: (date: Date, session: any) => {
+    if(!session?.user?.id){
+      return
+    }
+
+    const headers = {
+      'Authorization': `Bearer ${session?.access_token}`,
+    }
+
+    axios.post(`${process.env.EXPO_PUBLIC_API_URL}/records`, {
+      date: date.toISOString().split('T')[0],
+      user_id: session?.user?.id,
+    }, {
+      headers,
+    }).then((res) => {
+      set({ records: res.data.records })
+    })
+  }
+}))
 
 export default function HomeScreen() {
 
+    const session = useAuth((state:any) => state.session)
+
+
     const [date, setDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
+
+    const records = useRecord((state: any) => state.records)
+    const fetchRecords = useRecord((state: any) => state.fetchRecords)
+
+    useEffect(() => {
+      if(session?.user?.id){
+        fetchRecords(date, session)
+      }
+    }, [date])
+
     return (
       <SafeAreaView className="flex-1 flex gap-4 mx-4">
         {/* date */}
@@ -36,13 +74,17 @@ export default function HomeScreen() {
           <View className="flex-1 bg-green-50 rounded-lg p-4 flex items-center justify-center">
             <View className="w-full flex flex-row justify-between">
               <Text className="font-bold text-green-500">Income</Text>
-              <Text className="text-green-500">1000</Text>
+              <Text className="text-green-500">
+                {records.filter((record: any) => record.amount > 0).reduce((acc: number, record: any) => acc + record.amount, 0)}
+              </Text>
             </View>
           </View>
           <View className="flex-1 bg-red-50 rounded-lg p-4 flex items-center justify-center">
             <View className="w-full flex flex-row justify-between">
               <Text className="font-bold text-red-500">Expenses</Text>
-              <Text className="text-red-500">1000</Text>
+              <Text className="text-red-500">
+                {records.filter((record: any) => record.amount < 0).reduce((acc: number, record: any) => acc + record.amount, 0)}
+              </Text>
             </View>
           </View>
         </View>
@@ -52,12 +94,15 @@ export default function HomeScreen() {
             Details
           </Text>
           <ScrollView className="flex-1">
-            <RecordCard record={{
+            {/* <RecordCard record={{
               id: 1,
               title: 'Salary',
               amount: 1000,
               createdAt: '2021-01-01'
-            }} />
+            }} /> */}
+            {records.map((record: any) => (
+              <RecordCard key={record.id} record={record} />
+            ))}
           </ScrollView>
         </View>
       </SafeAreaView>  
